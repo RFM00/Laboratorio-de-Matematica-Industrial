@@ -1,0 +1,260 @@
+
+
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.Statement;
+import java.util.Arrays;
+import java.util.Locale;
+import java.util.Scanner;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
+
+public class ConnectionDB {
+	
+	private Connection connection = null;
+	private Statement statement = null;
+	private ResultSet resultSet = null;
+	
+	private int qtdProdutos;
+	private int qtdMaquinas;
+	private Scanner sc;
+	
+	public ConnectionDB() {
+		connect();
+	}
+	
+	public ConnectionDB(String path) throws FileNotFoundException {
+		this();
+		sc = new Scanner(new FileInputStream(path));
+        sc.useLocale(Locale.US);
+
+        qtdProdutos = sc.nextInt();
+        qtdMaquinas = sc.nextInt();
+	}
+	
+	public void connect() {
+		String DRIVER = "com.mysql.cj.jdbc.Driver";
+		String SERVER = "jdbc:mysql://localhost:3306/db_cfsp?useTimezone=true&serverTimezone=UTC";
+		String USER = "root";
+		String PASS = "";
+		try {
+			Class.forName(DRIVER);
+			this.connection = DriverManager.getConnection(SERVER, USER, PASS);
+			this.statement = this.connection.createStatement();
+		} catch (Exception e) {
+			System.out.println("ERRO: " + e.getMessage());
+			
+		}
+	}
+	
+	public void getProduction(int [][] p) {
+		try {
+			String query = "SELECT * FROM production WHERE idProduct = '1' ORDER BY idMachine;";
+			this.resultSet = this.statement.executeQuery(query);
+			this.statement = this.connection.createStatement();
+			for(int i = 0; i < qtdMaquinas; i++) {
+				for(int j = 0; j < qtdProdutos; j++) {
+		            this.resultSet.next();
+		           	p[j][i] = resultSet.getInt("custo");
+		        }
+			}					
+		}catch(Exception e){
+			System.out.println("ERRO: " + e.getMessage());
+		}
+	}
+	
+	public void bestSolDB(Sol s) {
+		try {
+			String query = "UPDATE product SET solution = '" + Arrays.toString(s.s) + "', totalTime = '" + s.funcaoObjetivo() + "';";
+			this.statement.executeUpdate(query);
+		}catch(Exception e) {
+			System.out.println("ERRO: " + e.getMessage());
+		}
+	}
+	
+	public int getNumSection() {
+		int nSection = 0;
+		try {
+			String query = "SELECT * FROM product WHERE idProduct = '1';";
+			this.resultSet = this.statement.executeQuery(query);
+			this.statement = this.connection.createStatement();
+			while(this.resultSet.next()) {
+				nSection = resultSet.getInt("numSection");
+				
+			}
+			
+		}catch(Exception e){
+			System.out.println("ERRO: " + e.getMessage());
+		}
+		return nSection;
+	}	
+	
+	
+	public int getNumMachine() {
+		int nMachine = 0;
+		try {
+			String query = "SELECT * FROM product WHERE idProduct = '1';";
+			this.resultSet = this.statement.executeQuery(query);
+			this.statement = this.connection.createStatement();
+			while(this.resultSet.next()) {
+				nMachine = resultSet.getInt("numMachine");
+				
+			}
+			
+			
+		}catch(Exception e){
+			System.out.println("ERRO: " + e.getMessage());
+		}
+		return nMachine;
+	}
+	
+			
+	public boolean ConexaoON() {
+		if(this.connection != null) {
+			return true;
+		}else {
+			return false;
+		}
+	}
+	
+	
+	public void inserirMaquina() {
+		
+		for(int i = 1; i <= qtdMaquinas; i++) {
+			try {
+				String query = "INSERT INTO maquina (nome) VALUES ('maquina " + i + "');";
+				this.statement.executeUpdate(query);
+			}catch(Exception e) {
+				System.out.println("ERRO: " + e.getMessage());
+			}
+		}
+		
+		
+	}
+	
+	public void inserirProducao() {
+            		
+		for(int i = 1; i <= qtdProdutos; i++) {
+			for(int j = 1; j <= qtdMaquinas; j++) {
+				try {
+					
+					String query = "INSERT INTO producao (idProduto, idMaquina, custo) VALUES ('" + i + "', '" + j + "', '" + sc.nextInt() + "');";
+					this.statement.executeUpdate(query);
+				}catch(Exception e) {
+					System.out.println("ERRO: " + e.getMessage());
+				}
+			}
+			
+		}
+		
+		sc.close();
+	}
+	
+	public void inserirProduto(String nome, int sequencia[]) {
+		
+		try {
+			String query = "INSERT INTO produto (nome, sequencia) VALUES ('" + nome + "', '" + sequencia + "' );";
+			this.statement.executeUpdate(query);
+		}catch(Exception e) {
+			System.out.println("ERRO: " + e.getMessage());
+		}
+		
+	}
+	
+	
+	public void inserirPedido(String cliente, String dataPedido, String dataEntrega, int idProdutoQuantidade[]) {
+		int quantidadePedidos = 0;
+		try {
+			String query = "INSERT INTO pedido (cliente, dataPedido, dataEntrega, fluxo, tempoTotal, atendeuPedido) VALUES ('" + cliente + "', '" + dataPedido + "', '" + dataEntrega + "', '" + 0 + "', '" + 0 + "', '" + 0 + "' );";
+			this.statement.executeUpdate(query);
+			query = "SELECT * FROM pedido;";
+			this.resultSet = this.statement.executeQuery(query);
+			this.statement = this.connection.createStatement();
+			while(this.resultSet.next()) {
+				quantidadePedidos++;
+			}
+			System.out.println(quantidadePedidos);
+			for(int i = 0; i < idProdutoQuantidade.length; i++){
+				if(idProdutoQuantidade[i] > 0) {
+					query = "INSERT INTO descricao (idPedido, idProduto, quantidade) VALUES ('" + quantidadePedidos + "', '" + (i+1) + "', '" + idProdutoQuantidade[i] + "');";
+					this.statement.executeUpdate(query);
+				}
+			}
+		}catch(Exception e) {
+			System.out.println("ERRO: " + e.getMessage());
+		}
+		
+	}
+	
+	public void editarProduto(int idProduto, String nome, int sequencia[]) {
+		try {
+			String query = "UPDATE produto SET nome = '" + nome + "', sequencia = '" + sequencia + "' WHERE idProduto = " + idProduto + ";";
+			this.statement.executeUpdate(query);
+		}catch(Exception e) {
+			System.out.println("ERRO: " + e.getMessage());
+		}
+	}
+	
+	public void deletarProduto(int idProduto) {
+		try {
+			String query = "DELETE FROM produto WHERE idProduto = " + idProduto + ";";
+			this.statement.executeUpdate(query);
+		}catch(Exception e) {
+			System.out.println("ERRO: " + e.getMessage());
+		}
+	}
+	
+	public void listarProdutos() {
+		
+		try {
+			String query = "SELECT * FROM produto;";
+			this.resultSet = this.statement.executeQuery(query);
+			this.statement = this.connection.createStatement();
+			while(this.resultSet.next()) {
+				System.out.println("ID: " + this.resultSet.getString("idProduto") + "nome: " + this.resultSet.getString("nome") + "sequencia: " + this.resultSet.getString("sequencia"));
+			}
+			
+		}catch(Exception e){
+			System.out.println("ERRO: " + e.getMessage());
+		}
+	}	
+	
+	public void limparDB() {
+		try {
+			
+			String query = "TRUNCATE TABLE produto";
+			this.statement.executeUpdate(query);
+			query = "TRUNCATE TABLE producao";
+			this.statement.executeUpdate(query);
+			query = "TRUNCATE TABLE pedido";
+			this.statement.executeUpdate(query);
+			query = "TRUNCATE TABLE maquina";
+			this.statement.executeUpdate(query);
+			query = "TRUNCATE TABLE descricao";
+			this.statement.executeUpdate(query);
+			
+		}catch(Exception e){
+			System.out.println("ERRO: " + e.getMessage());
+		}
+	}
+	
+	
+	
+	public void conexaoOFF() {
+		try {
+			this.connection.close();
+		}catch(Exception e) {
+			System.out.println("ERRO: " + e.getMessage());
+		}
+	}
+	
+	
+	
+}
+	
+	
+	
+	
