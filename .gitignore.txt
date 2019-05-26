@@ -1,6 +1,0 @@
-*.class
-*.classpah
-*.project
-*.vscode
-*.metadata
-*.settings
