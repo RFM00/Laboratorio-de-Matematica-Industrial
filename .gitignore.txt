@@ -1,6 +1,6 @@
 .class
-.classpath
+.classpah
 .project
-.vscode/
-.settings/
-.metadata/
+.vscode
+.metadata
+.settings
