@@ -45,7 +45,7 @@ public class ConnectionDB {
 		String DRIVER = "com.mysql.cj.jdbc.Driver";
 		String SERVER = "jdbc:mysql://localhost:3306/db_cfsp?useTimezone=true&serverTimezone=UTC";
 		String USER = "root";
-		String PASS = "Hux084207599";
+		String PASS = "";
 		try {
 			Class.forName(DRIVER);
 			this.connection = DriverManager.getConnection(SERVER, USER, PASS);
