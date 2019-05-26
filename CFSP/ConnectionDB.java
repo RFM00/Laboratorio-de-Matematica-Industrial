@@ -163,7 +163,7 @@ public class ConnectionDB {
 		int[] idx = new int[qtdMaquinas];
 
 		  for(int i = 0; i < qtdMaquinas; i++) {
-		      idx[i] = i;
+		      idx[i] = i + 1;
 		  }
 		for(int i = 1; i <= qtdProdutos; i++) {
 			try {
