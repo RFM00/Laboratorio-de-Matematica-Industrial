@@ -1,6 +1,6 @@
-.class
-.classpah
-.project
-.vscode
-.metadata
-.settings
+*.class
+*.classpah
+*.project
+*.vscode
+*.metadata
+*.settings
