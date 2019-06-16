@@ -37,13 +37,13 @@ public class ConnectionDB {
         
         inserirProduto();
         inserirMaquina();
-        inserirProducao();
+        inserirProduto_has_maquina();
         
 	}
 	
 	public void connect() {
 		String DRIVER = "com.mysql.cj.jdbc.Driver";
-		String SERVER = "jdbc:mysql://localhost:3306/db_cfsp?useTimezone=true&serverTimezone=UTC";
+		String SERVER = "jdbc:mysql://localhost:3306/new_db_cfsp?useTimezone=true&serverTimezone=UTC";
 		String USER = "root";
 		String PASS = "";
 		try {
@@ -88,45 +88,59 @@ public class ConnectionDB {
 		cfsp.M = qtdMaquinas;
         cfsp.N = qtdProdutos;
         cfsp.p = new int[cfsp.N][cfsp.M];
-        getProducao(cfsp.p);
+        getProduto_has_maquina(cfsp.p);
 	}
 	
-	public void getPedido(CFSP cfsp) {
-		int idPedido = getQtdPedidos();
+//	public void getPedidoSemana(int idPedido, int [][] p) {
+//		try {
+//			String query = "SELECT idDemanda FROM pedido_has_demanda where idPedido = '" + idPedido + "';";
+//			this.resultSet = this.statement.executeQuery(query);
+//			this.statement = this.connection.createStatement();
+//			
+//			while(this.resultSet.next()) {
+//				
+//			}
+//			for(int i = 0; i < qtdMaquinas; i++) {
+//				for(int j = 0; j < qtdProdutos; j++) {
+//		            this.resultSet.next();
+//		           	p[j][i] = resultSet.getInt("custo");
+//		        }
+//			}					
+//		}catch(Exception e){
+//			System.out.println("ERRO: " + e.getMessage());
+//		}
+//	}
+	
+	public void getPedidoSemana(CFSP cfsp, int idPedido) {
 		try {
 			cfsp.prodQtd = new int[qtdProdutos];
 			Arrays.fill(cfsp.prodQtd, 0);
-			String query = "SELECT * FROM descricao WHERE idPedido = '" + idPedido + "' ORDER BY idProduto;";
+			String query = "SELECT idDemanda FROM pedido_has_demanda WHERE idPedido = '" + idPedido + "';";
 			this.resultSet = this.statement.executeQuery(query);
 			this.statement = this.connection.createStatement();
+			
+			String queryDemanda;
+			Statement statementDemanda = null;
+			ResultSet resultSetDemanda = null;
 			while(this.resultSet.next()) {
-				cfsp.prodQtd[this.resultSet.getInt("idProduto") - 1] = this.resultSet.getInt("quantidade");
+				queryDemanda = "SELECT * FROM demanda_has_produto WHERE idDemanda = '" + this.resultSet.getInt(1) + "';";
+				statementDemanda = this.connection.createStatement();
+				resultSetDemanda = statementDemanda.executeQuery(queryDemanda);
 				
+				while(resultSetDemanda.next()) {
+					cfsp.prodQtd[resultSetDemanda.getInt("idProduto") - 1] += resultSetDemanda.getInt("quantidade");					
+				}
 			}								
 		}catch(Exception e){
 			System.out.println("ERRO: " + e.getMessage());
 		}
 	}
 	
-	public int getQtdPedidos() {
-		int qtdPedidos = 0;
-		try{
-			String query = "SELECT * FROM pedido;";
-			this.resultSet = this.statement.executeQuery(query);
-			this.statement = this.connection.createStatement();
-			while(this.resultSet.next()) {
-				qtdPedidos++;
-			}	
-		}catch(Exception e){
-			System.out.println("ERRO: " + e.getMessage());
-		}
-		return qtdPedidos;
-	}
 	
 	
-	public void getProducao(int [][] p) {
+	public void getProduto_has_maquina(int [][] p) {
 		try {
-			String query = "SELECT * FROM producao ORDER BY idMaquina;";
+			String query = "SELECT * FROM produto_has_maquina ORDER BY idMaquina;";
 			this.resultSet = this.statement.executeQuery(query);
 			this.statement = this.connection.createStatement();
 			for(int i = 0; i < qtdMaquinas; i++) {
@@ -140,9 +154,6 @@ public class ConnectionDB {
 		}
 	}
 	
-	
-	
-
 	
 	
 	public void inserirMaquina() {
@@ -177,13 +188,13 @@ public class ConnectionDB {
 		}
 	}
 	
-	public void inserirProducao() {
+	public void inserirProduto_has_maquina() {
             		
 		for(int i = 1; i <= qtdProdutos; i++) {
 			for(int j = 1; j <= qtdMaquinas; j++) {
 				try {
 					
-					String query = "INSERT INTO producao (idProduto, idMaquina, custo) VALUES ('" + i + "', '" + j + "', '" + sc.nextInt() + "');";
+					String query = "INSERT INTO produto_has_maquina (idProduto, idMaquina, custo) VALUES ('" + j + "', '" + i + "', '" + sc.nextInt() + "');";
 					this.statement.executeUpdate(query);
 				}catch(Exception e) {
 					System.out.println("ERRO: " + e.getMessage());
@@ -195,50 +206,95 @@ public class ConnectionDB {
 		sc.close();
 	}
 	
-	
-	public void inserirPedido(String cliente, String dataPedido, String dataEntrega, int idProdutoQuantidade[]) {
-		int idPedidos = 0;
-		try {
-			String query = "INSERT INTO pedido (cliente, dataPedido, dataEntrega, fluxo, tempoTotal, atendeuPedido) VALUES ('" + cliente + "', '" + dataPedido + "', '" + dataEntrega + "', '" + 0 + "', '" + 0 + "', '" + 0 + "' );";
-			this.statement.executeUpdate(query);
-			query = "SELECT * FROM pedido;";
-			this.resultSet = this.statement.executeQuery(query);
-			this.statement = this.connection.createStatement();
-			while(this.resultSet.next()) {
-				idPedidos++;
-			}
-			for(int i = 0; i < idProdutoQuantidade.length; i++){
-				if(idProdutoQuantidade[i] > 0) {
-					query = "INSERT INTO descricao (idPedido, idProduto, quantidade) VALUES ('" + idPedidos + "', '" + (i+1) + "', '" + idProdutoQuantidade[i] + "');";
-					this.statement.executeUpdate(query);
-				}
-			}
-		}catch(Exception e) {
-			System.out.println("ERRO: " + e.getMessage());
-		}
+	public int inserirPedido(int semana) {
+		int lastIdPedido = 0;
 		
-	}
-	
-	public void atualizarPedido(Sol s) {
-		int atendeu = 0;
-		int tempoTotal = s.calcDias();
 		try {
-			String query = "SELECT DATEDIFF(dataEntrega, dataPedido) FROM pedido where idPedido = '" + getQtdPedidos() + "';";
+			String query = "INSERT INTO pedido (semana) VALUES ('" + semana + "');";
+			this.statement.executeUpdate(query);
+			
+			query = "SELECT LAST_INSERT_ID();";
 			this.resultSet = this.statement.executeQuery(query);
 			this.statement = this.connection.createStatement();
 			this.resultSet.next();
-			if(tempoTotal <= this.resultSet.getInt(1)) {
-				atendeu = 1;
-			}
+			lastIdPedido = this.resultSet.getInt(1);
+			
 		}catch(Exception e) {
 			System.out.println("ERRO: " + e.getMessage());
 		}
 		
+		return lastIdPedido;
+	}
+	
+	
+	public int inserirDemanda(String cliente, int idProdutoQuantidade[]) {
+		int lastIdDemanda = 0;
 		try {
-			String query = "UPDATE pedido SET fluxo = '" + Arrays.toString(s.s) + "', tempoTotal = '" + tempoTotal + "', atendeuPedido = '" + atendeu + "' WHERE idPedido = '" + getQtdPedidos() + "';";
+			String query = "INSERT INTO demanda (cliente) VALUES ('" + cliente + "');";
+			this.statement.executeUpdate(query);
+			query = "SELECT LAST_INSERT_ID();";
+			this.resultSet = this.statement.executeQuery(query);
+			this.statement = this.connection.createStatement();
+			this.resultSet.next();
+			lastIdDemanda = this.resultSet.getInt(1);
+			
+			for(int i = 0; i < idProdutoQuantidade.length; i++) {
+				inserirDemandaProduto(lastIdDemanda, i + 1 , idProdutoQuantidade[i]);
+			}
+			
+		}catch(Exception e) {
+			System.out.println("ERRO: " + e.getMessage());
+		}
+		
+		return lastIdDemanda;
+	}
+	
+	public void inserirDemandaProduto(int idDemanda, int idProduto, int quantidade) {
+		Statement statementDemandaProduto = null;
+		try {
+			String query = "INSERT INTO demanda_has_produto (idDemanda, idProduto, quantidade) VALUES ('" + idDemanda + "', '" + idProduto + "', '" + quantidade + "');";
+			statementDemandaProduto = this.connection.createStatement();
+			statementDemandaProduto.executeUpdate("SET FOREIGN_KEY_CHECKS=0");
+			statementDemandaProduto.executeUpdate(query);
+		}catch(Exception e) {
+			System.out.println("ERRO: " + e.getMessage());
+		}
+	}
+	
+	
+	public void inserirPedidoDemanda(int idPedido, int idDemanda) {
+		try {
+			String query = "INSERT INTO pedido_has_demanda (idPedido, idDemanda) VALUES ('" + idPedido + "', '" + idDemanda + "');";
 			this.statement.executeUpdate(query);
 		}catch(Exception e) {
-			System.out.println("AEWWW");
+			System.out.println("ERRO: " + e.getMessage());
+		}
+	}
+	
+	
+	// -------------------------------------------------------------------------------------------------------------------
+	
+	
+	
+	public void atualizarPedido(Sol s, int idPedido) {
+		int atendeu = 0;
+		int tempoTotal = s.calcDias();
+//		try {
+//			String query = "SELECT DATEDIFF(dataEntrega, dataPedido) FROM pedido where idPedido = '" + idPedido + "';";
+//			this.resultSet = this.statement.executeQuery(query);
+//			this.statement = this.connection.createStatement();
+//			this.resultSet.next();
+//			if(tempoTotal <= this.resultSet.getInt(1)) {
+//				atendeu = 1;
+//			}
+//		}catch(Exception e) {
+//			System.out.println("ERRO: " + e.getMessage());
+//		}
+		
+		try {
+			String query = "UPDATE pedido SET fluxo = '" + Arrays.toString(s.s) + "', tempoTotal = '" + tempoTotal + "', atendeuPedido = '" + atendeu + "' WHERE idPedido = '" + idPedido + "';";
+			this.statement.executeUpdate(query);
+		}catch(Exception e) {
 			System.out.println("ERRO: " + e.getMessage());
 		}
 	}	
@@ -284,13 +340,19 @@ public class ConnectionDB {
 			
 			String query = "TRUNCATE TABLE produto";
 			this.statement.executeUpdate(query);
-			query = "TRUNCATE TABLE producao";
-			this.statement.executeUpdate(query);
 			query = "TRUNCATE TABLE pedido";
 			this.statement.executeUpdate(query);
 			query = "TRUNCATE TABLE maquina";
 			this.statement.executeUpdate(query);
-			query = "TRUNCATE TABLE descricao";
+			query = "SET FOREIGN_KEY_CHECKS = 0;";
+			this.statement.executeUpdate(query);
+			query = "TRUNCATE TABLE demanda";
+			this.statement.executeUpdate(query);
+			query = "TRUNCATE TABLE demanda_has_produto";
+			this.statement.executeUpdate(query);
+			query = "TRUNCATE TABLE produto_has_maquina";
+			this.statement.executeUpdate(query);
+			query = "TRUNCATE TABLE pedido_has_demanda";
 			this.statement.executeUpdate(query);
 			
 		}catch(Exception e){

@@ -153,7 +153,7 @@ class SH{
                 System.out.println("CONVERGIU: " + currentPopMean);
                 System.out.println(toString());
                 ConnectionDB db = new ConnectionDB();
-                db.atualizarPedido(pop.get(0));
+                db.atualizarPedido(pop.get(0), 1);
                 break;
             }
             
